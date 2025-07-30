@@ -1,12 +1,11 @@
 # Expense Tracker Bot
 
-A Telegram bot for tracking expenses and income that integrates with Notion databases.
+A Telegram bot for tracking expenses and income that integrates with Notion databases.  [Template from Notion](https://www.notion.com/templates/personal-finance-tracker-with-automations)
 
 ## Features
 
 - 📱 Telegram bot interface for easy expense/income tracking
 - 🔗 Integration with Notion databases
-- 📊 Automatic categorization of transactions
 - 📅 Flexible date selection (today or custom date)
 - 🏷️ Predefined categories with custom tag support
 - 📝 Detailed transaction logging
@@ -167,12 +166,6 @@ The project uses Kotlin coding conventions and includes:
 1. **Bot not responding**: Check your `TELEGRAM_BOT_TOKEN`
 2. **Notion API errors**: Verify your `NOTION_TOKEN` and database IDs
 3. **Build failures**: Ensure you have Java 17+ installed
-
-### Logs
-
-Logs are written to:
-- Console output
-- `logs/expense-tracker-bot.log` (with daily rotation)
 
 ## Contributing
 
