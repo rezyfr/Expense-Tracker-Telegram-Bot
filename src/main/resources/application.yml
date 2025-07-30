@@ -1,0 +1,7 @@
+telegram:
+  token: ${TELEGRAM_BOT_TOKEN}
+
+notion:
+  token: ${NOTION_TOKEN}
+  incomeDatabaseId: ${NOTION_INCOME_DATABASE_ID}
+  expenseDatabaseId: ${NOTION_EXPENSE_DATABASE_ID} 
