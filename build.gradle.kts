@@ -32,6 +32,8 @@ dependencies {
     // Date/Time utilities
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
+    implementation("io.ktor:ktor-server-core-jvm:2.3.4")
+    implementation("io.ktor:ktor-server-netty-jvm:2.3.4")
     // Testing
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
