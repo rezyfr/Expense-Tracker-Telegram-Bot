@@ -15,7 +15,8 @@ data class AppConfig(
             return AppConfig(
                 telegram = TelegramConfig(
                     token = System.getenv("TELEGRAM_BOT_TOKEN") 
-                        ?: throw IllegalStateException("TELEGRAM_BOT_TOKEN environment variable is required")
+                        ?: throw IllegalStateException("TELEGRAM_BOT_TOKEN environment variable is required"),
+                    webhookUrl = System.getenv("TELEGRAM_WEBHOOK_URL") ?: ""
                 ),
                 notion = NotionConfig(
                     token = System.getenv("NOTION_TOKEN") 
@@ -32,7 +33,8 @@ data class AppConfig(
 
 @kotlinx.serialization.Serializable
 data class TelegramConfig(
-    val token: String
+    val token: String,
+    val webhookUrl: String,
 )
 
 @kotlinx.serialization.Serializable

@@ -5,6 +5,7 @@ import com.expensetracker.model.Transaction
 import com.expensetracker.model.TransactionType
 import com.expensetracker.model.UserState
 import com.expensetracker.service.NotionService
+import com.expensetracker.startHttpServer
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
@@ -15,35 +16,48 @@ import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.ParseMode
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import com.github.kotlintelegrambot.logging.LogLevel
+import com.github.kotlintelegrambot.webhook.WebhookConfig
+import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
-
+lateinit var bot: Bot
 class TelegramBotManager(
     private val config: TelegramConfig,
     private val notionService: NotionService
 ) {
     private val userStates = mutableMapOf<Long, UserState>()
 
-    fun startBot() {
-        val bot = Bot.Builder().build {
+    fun startBotWebhook() {
+        bot = Bot.Builder().build {
             this.token = config.token
             logLevel = LogLevel.All()
+            webhookConfig = WebhookConfig(
+                url = config.webhookUrl,
+                dropPendingUpdates = true
+            )
+
             dispatch {
                 command("start") {
+                    logger.info { "Handling /start command for ${message.chat.id}" }
+
                     val keyboard = InlineKeyboardMarkup.create(
                         listOf(
                             InlineKeyboardButton.CallbackData("Expense", "type_expense"),
                             InlineKeyboardButton.CallbackData("Income", "type_income")
                         )
                     )
-                    bot.sendMessage(
-                        chatId = ChatId.fromId(message.chat.id),
-                        text = "What would you like to add?",
-                        replyMarkup = keyboard
-                    )
+                    withTimeout(3000) {
+                        bot.sendMessage(
+                            chatId = ChatId.fromId(message.chat.id),
+                            text = "What would you like to add?",
+                            replyMarkup = keyboard
+                        )
+                    }
+
+                    logger.info { "Sent /start reply to ${message.chat.id}" }
                 }
 
                 callbackQuery("type_expense") {
@@ -165,7 +179,7 @@ class TelegramBotManager(
                                 state.date = LocalDate.parse(message.text ?: "")
                                 handleSubmission(bot, message.chat.id, state)
                                 userStates.remove(message.from!!.id)
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 bot.sendMessage(
                                     chatId = ChatId.fromId(message.chat.id),
                                     text = "Invalid date format. Please use YYYY-MM-DD:"
@@ -176,9 +190,9 @@ class TelegramBotManager(
                 }
             }
         }
-        
-        logger.info { "Starting Telegram bot..." }
-        bot.startPolling()
+
+        startHttpServer()
+        bot.startWebhook()
     }
 
     private fun handleSubmission(bot: Bot, chatId: Long, state: UserState) {

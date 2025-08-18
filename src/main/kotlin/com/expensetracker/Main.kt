@@ -1,24 +1,25 @@
 package com.expensetracker
 
 import com.expensetracker.bot.TelegramBotManager
+import com.expensetracker.bot.bot
 import com.expensetracker.config.AppConfig
 import com.expensetracker.service.NotionService
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.head
-import io.ktor.server.routing.routing
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.github.kotlintelegrambot.entities.Update
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
 fun main() {
     try {
-        startHttpServer()
         logger.info { "Starting Expense Tracker Bot..." }
         
         // Load configuration
@@ -30,7 +31,7 @@ fun main() {
         val botManager = TelegramBotManager(config.telegram, notionService)
         
         // Start the bot
-        botManager.startBot()
+        botManager.startBotWebhook()
         
         logger.info { "Bot started successfully" }
     } catch (e: Exception) {
@@ -47,6 +48,30 @@ fun startHttpServer() {
             }
             head("/") {
                 call.respond(HttpStatusCode.OK)
+            }
+            post("/webhook") {
+                try {
+                    val body = call.receiveText()
+                    val update: Update = jacksonObjectMapper().apply {
+                        findAndRegisterModules()
+                        configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                        propertyNamingStrategy = com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE
+                        configure(com.fasterxml.jackson.databind.DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
+                        enable(com.fasterxml.jackson.databind.MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                    }.readValue(body)
+
+                    // Respond immediately
+                    call.respond(HttpStatusCode.OK)
+
+                    logger.info { "Webhook processing start" }
+                    // Process async
+                    bot.processUpdate(update)
+
+                    logger.info { "Webhook processing done" }
+                } catch (e: Exception) {
+                    logger.error(e) { "Webhook processing failed ${e.message}" }
+                    call.respond(HttpStatusCode.BadRequest)
+                }
             }
         }
     }.start(wait = false)
