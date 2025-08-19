@@ -4,6 +4,7 @@ import com.expensetracker.bot.TelegramBotManager
 import com.expensetracker.bot.bot
 import com.expensetracker.config.AppConfig
 import com.expensetracker.service.NotionService
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kotlintelegrambot.entities.Update
@@ -52,22 +53,18 @@ fun startHttpServer() {
             post("/webhook") {
                 try {
                     val body = call.receiveText()
-                    val update: Update = jacksonObjectMapper().apply {
-                        findAndRegisterModules()
-                        configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        propertyNamingStrategy = com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE
-                        configure(com.fasterxml.jackson.databind.DeserializationFeature.READ_ENUMS_USING_TO_STRING, true)
-                        enable(com.fasterxml.jackson.databind.MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                    }.readValue(body)
+                    val mapper  = jacksonObjectMapper()
+                        .findAndRegisterModules()
+                        .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                        .setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE)
+                        .addMixIn(com.github.kotlintelegrambot.entities.Message::class.java, MessageMixin::class.java)
 
-                    // Respond immediately
+                    val update = mapper.readValue<Update>(body)
+
                     call.respond(HttpStatusCode.OK)
 
-                    logger.info { "Webhook processing start" }
-                    // Process async
                     bot.processUpdate(update)
 
-                    logger.info { "Webhook processing done" }
                 } catch (e: Exception) {
                     logger.error(e) { "Webhook processing failed ${e.message}" }
                     call.respond(HttpStatusCode.BadRequest)
@@ -76,3 +73,6 @@ fun startHttpServer() {
         }
     }.start(wait = false)
 }
+
+@JsonIgnoreProperties("reply_markup")
+interface MessageMixin
