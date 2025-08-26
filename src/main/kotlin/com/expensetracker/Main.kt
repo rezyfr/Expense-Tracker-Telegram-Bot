@@ -57,6 +57,7 @@ fun startHttpServer() {
                         .findAndRegisterModules()
                         .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                         .setPropertyNamingStrategy(com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE)
+                        .enable(com.fasterxml.jackson.databind.MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
                         .addMixIn(com.github.kotlintelegrambot.entities.Message::class.java, MessageMixin::class.java)
 
                     val update = mapper.readValue<Update>(body)
